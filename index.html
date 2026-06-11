@@ -220,8 +220,11 @@
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             opacity: 0;
-            pointer-events: none;
+            z-index: 10;
+            cursor: text;
         }
 
         .words-wrapper {
@@ -359,6 +362,63 @@
             color: var(--accent-1);
             border-color: rgba(59, 130, 246, 0.3);
             transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 1rem;
+            }
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .logo {
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 0.5rem;
+            }
+            .timer-wrap {
+                justify-content: center;
+            }
+            .words-wrapper {
+                height: 120px;
+                padding: 15px;
+            }
+            .words-display {
+                font-size: 1.4rem;
+            }
+            .keyboard-container {
+                display: none;
+            }
+            .stats-main {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .stat-hero .val {
+                font-size: 4rem;
+            }
+            .stats-secondary {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .modal-content {
+                padding: 1.5rem;
+            }
+            #caret {
+                height: 1.5rem;
+            }
+            .progress-grid {
+                grid-template-columns: 1fr;
+            }
+            .profile-info-display {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
 
         /* Keyboard Layout Styles */
@@ -1460,7 +1520,7 @@
             formatWordList(words);
 
             elements.resultsModal.classList.add('hidden');
-            elements.hiddenInput.value = '';
+            elements.hiddenInput.value = ' ';
             elements.typingContainer.classList.add('blurred');
             caretElement.style.display = 'none';
             elements.wordsDisplay.style.transform = `translateY(0px)`;
@@ -1655,11 +1715,11 @@
             }
         });
 
-        elements.hiddenInput.addEventListener('keydown', (e) => {
+        function handleKeypress(e) {
             if (testEnded) return;
 
             // Highlight typing keys
-            highlightKey(e.code);
+            if (e.code) highlightKey(e.code);
 
             const currentWordEl = wordElements[currentWordIndex];
             const letterEls = currentWordEl.querySelectorAll('.letter:not(.extra)');
@@ -1692,7 +1752,7 @@
             }
 
             if (e.key === ' ' || e.code === 'Space') {
-                e.preventDefault();
+                if (e.preventDefault) e.preventDefault();
                 if (currentLetterIndex === 0) return;
 
                 playClick();
@@ -1754,6 +1814,35 @@
                     caretElement.classList.add('blink');
                 }, 500);
             }
+        }
+
+        let isMobileKeyboard = false;
+        elements.hiddenInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Unidentified' || e.keyCode === 229) {
+                isMobileKeyboard = true;
+                return;
+            }
+            isMobileKeyboard = false;
+            handleKeypress(e);
+        });
+
+        elements.hiddenInput.addEventListener('input', (e) => {
+            if (!isMobileKeyboard || testEnded) return;
+            
+            if (e.inputType === 'deleteContentBackward') {
+                handleKeypress({ key: 'Backspace', code: 'Backspace' });
+            } else if (e.data) {
+                const chars = e.data;
+                for (let i = 0; i < chars.length; i++) {
+                    const char = chars[i];
+                    if (char === ' ') {
+                        handleKeypress({ key: ' ', code: 'Space' });
+                    } else {
+                        handleKeypress({ key: char, code: 'Key' + char.toUpperCase(), shiftKey: char === char.toUpperCase() });
+                    }
+                }
+            }
+            elements.hiddenInput.value = ' ';
         });
 
         // Dropdowns setup
